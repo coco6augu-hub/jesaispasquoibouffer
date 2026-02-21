@@ -417,6 +417,12 @@
       color: #1d4ed8;
     }
 
+    .tag-sante {
+      border-color: rgba(15, 23, 42, 0.14);
+      background: #f1f5f9;
+      color: #475569;
+    }
+
     .result-meta {
       font-size: 0.86rem;
       color: var(--text-muted);
@@ -442,6 +448,25 @@
       line-height: 1.4;
       overflow: auto;
       padding-right: 2px;
+    }
+
+    .recipes-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .recipe-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px 12px 10px;
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .recipe-card .result-header {
+      margin-bottom: 6px;
     }
 
     /* Petite animation d'apparition quand une recette est affichée */
@@ -539,19 +564,29 @@
           </div>
 
           <div class="field">
-            <label for="max-price">Prix max / personne</label>
+            <label for="price-range">Tranche de prix / personne</label>
             <small>Budget approximatif par personne.</small>
             <div class="input-wrapper">
-              <select id="max-price" name="max_price">
+              <select id="price-range" name="price_range">
                 <option value="">Sans limite</option>
-                <option value="1">1 €</option>
-                <option value="1.5">1,50 €</option>
-                <option value="2">2 €</option>
-                <option value="2.5">2,50 €</option>
-                <option value="3">3 €</option>
-                <option value="3.5">3,50 €</option>
-                <option value="4">4 €</option>
-                <option value="5">5 €</option>
+                <option value="0-5">&lt; 5 €</option>
+                <option value="5-10">Entre 5 et 10 €</option>
+                <option value="10-15">Entre 10 et 15 €</option>
+                <option value="15+">&gt; 15 €</option>
+              </select>
+              <span class="select-arrow">▾</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="sante">Type de repas</label>
+            <small>Healthy, gras, normal ou peu importe.</small>
+            <div class="input-wrapper">
+              <select id="sante" name="sante">
+                <option value="">Peu importe</option>
+                <option value="healthy">Healthy</option>
+                <option value="gras">Gras</option>
+                <option value="normal">Normal</option>
               </select>
               <span class="select-arrow">▾</span>
             </div>
@@ -585,31 +620,13 @@
       </form>
     </section>
 
-    <!-- Colonne droite : résultat -->
+    <!-- Colonne droite : résultats -->
     <section class="result-card" aria-live="polite">
       <div id="placeholder" class="placeholder">
-        <p>Clique sur « Donne-moi une idée de repas » pour découvrir une recette aléatoire.</p>
+        <p>Clique sur « Donne-moi une idée de repas » pour découvrir des recettes aléatoires.</p>
       </div>
 
-      <div id="result" style="display: none;">
-        <div class="result-header">
-          <h2 id="recipe-name" class="result-title"></h2>
-          <div id="recipe-tags" class="result-badges"></div>
-        </div>
-
-        <div id="recipe-meta" class="result-meta"></div>
-
-        <div class="result-body">
-          <div>
-            <p class="result-section-title">Ingrédients</p>
-            <ul id="recipe-ingredients" class="ingredients-list"></ul>
-          </div>
-          <div>
-            <p class="result-section-title">Instructions</p>
-            <p id="recipe-instructions" class="instructions"></p>
-          </div>
-        </div>
-      </div>
+      <div id="results" style="display: none;"></div>
     </section>
   </main>
 
@@ -622,19 +639,14 @@
     //
     // 1) Déploie le script (fichiers fournis dans /apps-script)
     // 2) Colle ici l'URL du Web App Apps Script (se termine par /exec)
-    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycby_xmGXdLZ8AMa_wDxmTVH1h-H8T0pavv7wYb6wAMz5TPF9JLERnVzZFpY1wNROKHfz/exec';
+    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbx7gyluZl4vaLe1c4dKjz5MYIuYG89GDrYFfdAJ1LG4FkH6cNsMZ_j0Fbsw9S8GmjMa/exec';
 
     const form = document.getElementById('filters-form');
     const submitBtn = document.getElementById('submit-btn');
     const statusEl = document.getElementById('status');
 
     const placeholderEl = document.getElementById('placeholder');
-    const resultContainer = document.getElementById('result');
-    const recipeNameEl = document.getElementById('recipe-name');
-    const recipeTagsEl = document.getElementById('recipe-tags');
-    const recipeMetaEl = document.getElementById('recipe-meta');
-    const recipeIngredientsEl = document.getElementById('recipe-ingredients');
-    const recipeInstructionsEl = document.getElementById('recipe-instructions');
+    const resultsEl = document.getElementById('results');
 
     /**
      * Construit l'URL de requête à partir des entrées du formulaire.
@@ -642,15 +654,34 @@
      */
     function buildRequestUrl() {
       const maxTime = document.getElementById('max-time').value;
-      const maxPrice = document.getElementById('max-price').value;
+      const priceRange = document.getElementById('price-range').value;
+      const sante = document.getElementById('sante').value;
       const sansGluten = document.getElementById('sans-gluten').checked;
       const sansLactose = document.getElementById('sans-lactose').checked;
 
       const params = new URLSearchParams();
       if (maxTime) params.set('temps_max', maxTime);
-      if (maxPrice) params.set('prix_max', maxPrice);
+      
+      // Parse la tranche de prix
+      if (priceRange) {
+        if (priceRange === '0-5') {
+          params.set('prix_max', '5');
+        } else if (priceRange === '5-10') {
+          params.set('prix_min', '5');
+          params.set('prix_max', '10');
+        } else if (priceRange === '10-15') {
+          params.set('prix_min', '10');
+          params.set('prix_max', '15');
+        } else if (priceRange === '15+') {
+          params.set('prix_min', '15');
+        }
+      }
+
+      if (sante) params.set('sante', sante);
+      
       if (sansGluten) params.set('sans_gluten', 'true');
       if (sansLactose) params.set('sans_lactose', 'true');
+      params.set('count', '3');
 
       const qs = params.toString();
       return qs ? `${API_BASE_URL}?${qs}` : API_BASE_URL;
@@ -660,21 +691,30 @@
      * Met à jour l'affichage de la recette dans la carte de droite.
      * @param {Object} recipe - Objet recette renvoyé par l'API.
      */
-    function renderRecipe(recipe) {
+    function renderRecipeCard(recipe) {
       if (!recipe || !recipe.nom) {
         showError("Aucune recette trouvée avec ces critères.");
         return;
       }
 
-      // On masque le placeholder et on affiche la carte résultat
-      placeholderEl.style.display = 'none';
-      resultContainer.style.display = 'block';
-      resultContainer.classList.remove('fade-in');
-      // Force reflow pour rejouer l'animation
-      void resultContainer.offsetWidth;
-      resultContainer.classList.add('fade-in');
+      const card = document.createElement('article');
+      card.className = 'recipe-card fade-in';
 
-      recipeNameEl.textContent = recipe.nom || 'Recette sans nom';
+      const header = document.createElement('div');
+      header.className = 'result-header';
+
+      const title = document.createElement('h2');
+      title.className = 'result-title';
+      title.textContent = recipe.nom || 'Recette sans nom';
+
+      const tags = document.createElement('div');
+      tags.className = 'result-badges';
+
+      header.appendChild(title);
+      header.appendChild(tags);
+
+      const meta = document.createElement('div');
+      meta.className = 'result-meta';
 
       // Meta : temps + prix
       const metaParts = [];
@@ -684,59 +724,98 @@
       if (recipe.prix_par_personne != null && recipe.prix_par_personne !== '') {
         metaParts.push(recipe.prix_par_personne + ' € / personne');
       }
-      recipeMetaEl.textContent = metaParts.join('   ');
+      meta.textContent = metaParts.join('   ');
 
       // Tags (végétarien, sans gluten, sans lactose, rapide, etc.)
-      recipeTagsEl.innerHTML = '';
-
       if (recipe.sans_gluten === true || recipe.sans_gluten === 'true' || recipe.sans_gluten === '1') {
         const tag = document.createElement('span');
         tag.className = 'tag tag-gf';
         tag.textContent = 'Sans gluten';
-        recipeTagsEl.appendChild(tag);
+        tags.appendChild(tag);
       }
 
       if (recipe.sans_lactose === true || recipe.sans_lactose === 'true' || recipe.sans_lactose === '1') {
         const tag = document.createElement('span');
         tag.className = 'tag tag-lf';
         tag.textContent = 'Sans lactose';
-        recipeTagsEl.appendChild(tag);
+        tags.appendChild(tag);
       }
 
       if (recipe.temps_total_min && Number(recipe.temps_total_min) <= 25) {
         const tag = document.createElement('span');
         tag.className = 'tag tag-fast';
         tag.textContent = 'Rapide';
-        recipeTagsEl.appendChild(tag);
+        tags.appendChild(tag);
       }
 
-      // Ingrédients : la feuille contient probablement une chaîne avec des virgules.
-      recipeIngredientsEl.innerHTML = '';
+      if (recipe.sante && recipe.sante !== 'peu importe') {
+        const tag = document.createElement('span');
+        tag.className = 'tag tag-sante';
+        tag.textContent = recipe.sante === 'healthy' ? 'Healthy' : recipe.sante === 'gras' ? 'Gras' : recipe.sante === 'normal' ? 'Normal' : recipe.sante;
+        tags.appendChild(tag);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'result-body';
+
+      const ingWrap = document.createElement('div');
+      const ingTitle = document.createElement('p');
+      ingTitle.className = 'result-section-title';
+      ingTitle.textContent = 'Ingrédients';
+      const ingList = document.createElement('ul');
+      ingList.className = 'ingredients-list';
+
       if (recipe.ingredients) {
         const rawList = Array.isArray(recipe.ingredients)
           ? recipe.ingredients
           : String(recipe.ingredients).split(/[,;\n]/);
-
         rawList
           .map((item) => item.trim())
           .filter((item) => item.length > 0)
           .forEach((item) => {
             const li = document.createElement('li');
             li.textContent = item;
-            recipeIngredientsEl.appendChild(li);
+            ingList.appendChild(li);
           });
       } else {
         const li = document.createElement('li');
         li.textContent = '— Aucun ingrédient renseigné —';
-        recipeIngredientsEl.appendChild(li);
+        ingList.appendChild(li);
       }
 
-      // Instructions : texte brut, on préserve les retours à la ligne
-      if (recipe.instructions) {
-        recipeInstructionsEl.textContent = recipe.instructions;
-      } else {
-        recipeInstructionsEl.textContent = 'Aucune instruction détaillée pour cette recette.';
-      }
+      ingWrap.appendChild(ingTitle);
+      ingWrap.appendChild(ingList);
+
+      const instWrap = document.createElement('div');
+      const instTitle = document.createElement('p');
+      instTitle.className = 'result-section-title';
+      instTitle.textContent = 'Instructions';
+      const instP = document.createElement('p');
+      instP.className = 'instructions';
+      instP.textContent = recipe.instructions ? recipe.instructions : 'Aucune instruction détaillée pour cette recette.';
+      instWrap.appendChild(instTitle);
+      instWrap.appendChild(instP);
+
+      body.appendChild(ingWrap);
+      body.appendChild(instWrap);
+
+      card.appendChild(header);
+      card.appendChild(meta);
+      card.appendChild(body);
+
+      return card;
+    }
+
+    function renderRecipes(recipes) {
+      placeholderEl.style.display = 'none';
+      resultsEl.style.display = 'block';
+      resultsEl.innerHTML = '';
+      resultsEl.className = 'recipes-grid';
+
+      recipes.forEach((r) => {
+        const card = renderRecipeCard(r);
+        if (card) resultsEl.appendChild(card);
+      });
     }
 
     /**
@@ -747,7 +826,8 @@
       statusEl.textContent = message;
       statusEl.classList.remove('status--info');
       statusEl.classList.add('status--error');
-      if (!resultContainer || resultContainer.style.display === 'none') {
+      // Si aucun résultat n'est visible, on laisse le placeholder
+      if (!resultsEl || resultsEl.style.display === 'none') {
         placeholderEl.style.display = 'block';
       }
     }
@@ -819,13 +899,13 @@
           return;
         }
 
-        const recipe = data && data.recipe ? data.recipe : data;
-        if (!recipe || !recipe.nom) {
+        const recipes = data && Array.isArray(data.recipes) ? data.recipes : (data && data.recipe ? [data.recipe] : []);
+        if (!recipes || recipes.length === 0) {
           showError("Aucune recette trouvée avec ces critères.");
           return;
         }
 
-        renderRecipe(recipe);
+        renderRecipes(recipes);
         showInfo('Une nouvelle recette a été trouvée 🍽️');
       } catch (error) {
         console.error('Erreur lors de la requête API :', error);
