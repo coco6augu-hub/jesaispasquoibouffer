@@ -11,19 +11,24 @@
  *
  * Paramètres GET acceptés:
  * - temps_max (number)
+ * - prix_min (number)
  * - prix_max (number)
  * - sans_gluten (true/false)
  * - sans_lactose (true/false)
+ * - count (number, optionnel, défaut: 1, max: 10)
  *
  * Réponses:
- * - { recipe: { ... } }
+ * - { recipe: { ... } } (si count=1)
+ * - { recipes: [ { ... }, ... ] } (si count>1)
  * - si aucune: { success:false, message:"..." }
  */
 
 function doGet(e) {
   try {
     var cfg = getConfig_();
-    var filters = parseFilters_(e && e.parameter ? e.parameter : {});
+    var params = (e && e.parameter) ? e.parameter : {};
+    var filters = parseFilters_(params);
+    var count = parseCount_(params);
 
     var sheet = openSheet_(cfg);
     var rows = sheet.getDataRange().getValues();
@@ -45,8 +50,13 @@ function doGet(e) {
       return json_({ success: false, message: "Aucune recette trouvée avec ces critères." });
     }
 
-    var pick = matches[Math.floor(Math.random() * matches.length)];
-    return json_({ recipe: pick });
+    if (count <= 1) {
+      var pick = matches[Math.floor(Math.random() * matches.length)];
+      return json_({ recipe: pick });
+    }
+
+    var picks = pickRandomDistinct_(matches, count);
+    return json_({ recipes: picks });
   } catch (err) {
     return json_({ success: false, message: String(err && err.message ? err.message : err) });
   }
@@ -73,14 +83,35 @@ function openSheet_(cfg) {
 
 function parseFilters_(p) {
   var tempsMax = p.temps_max !== undefined && p.temps_max !== "" ? Number(p.temps_max) : null;
+  var prixMin = p.prix_min !== undefined && p.prix_min !== "" ? Number(p.prix_min) : null;
   var prixMax = p.prix_max !== undefined && p.prix_max !== "" ? Number(p.prix_max) : null;
 
   return {
     tempsMax: isFinite(tempsMax) ? tempsMax : null,
+    prixMin: isFinite(prixMin) ? prixMin : null,
     prixMax: isFinite(prixMax) ? prixMax : null,
     sansGluten: String(p.sans_gluten || "").toLowerCase() === "true",
     sansLactose: String(p.sans_lactose || "").toLowerCase() === "true"
   };
+}
+
+function parseCount_(p) {
+  var raw = p.count !== undefined && p.count !== "" ? Number(p.count) : 1;
+  if (!isFinite(raw) || raw < 1) return 1;
+  // sécurité: on limite pour éviter de renvoyer trop de données
+  return Math.min(Math.floor(raw), 10);
+}
+
+function pickRandomDistinct_(arr, count) {
+  // Fisher–Yates partiel (copie)
+  var copy = arr.slice(0);
+  for (var i = copy.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy.slice(0, Math.min(count, copy.length));
 }
 
 function normalizeHeader_(row) {
@@ -95,7 +126,6 @@ function indexColumns_(header) {
     if (i === -1) throw new Error("Colonne manquante: " + name);
     return i;
   }
-
   return {
     nom: idx("nom"),
     temps_total_min: idx("temps_total_min"),
@@ -137,9 +167,16 @@ function matchesFilters_(recipe, filters) {
     if (recipe.temps_total_min === null) return false;
     if (recipe.temps_total_min > filters.tempsMax) return false;
   }
-  if (filters.prixMax !== null) {
-    if (recipe.prix_par_personne === null) return false;
-    if (recipe.prix_par_personne > filters.prixMax) return false;
+  if (recipe.prix_par_personne === null) {
+    // Si le prix n'est pas renseigné, on exclut seulement si on a des filtres de prix
+    if (filters.prixMin !== null || filters.prixMax !== null) return false;
+  } else {
+    if (filters.prixMin !== null) {
+      if (recipe.prix_par_personne < filters.prixMin) return false;
+    }
+    if (filters.prixMax !== null) {
+      if (recipe.prix_par_personne > filters.prixMax) return false;
+    }
   }
   if (filters.sansGluten && recipe.sans_gluten !== true) return false;
   if (filters.sansLactose && recipe.sans_lactose !== true) return false;
