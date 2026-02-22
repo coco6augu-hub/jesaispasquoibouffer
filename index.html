@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Idée de repas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    /* ------------------------------
+       Styles généraux
+    --------------------------------*/
+    :root {
+      --bg: #faf9f7;
+      --bg-card: #ffffff;
+      --primary: #1a1a1a;
+      --accent: #c17f59;
+      --accent-soft: rgba(193, 127, 89, 0.12);
+      --danger: #c53030;
+      --text-main: #1a1a1a;
+      --text-muted: #6b6b6b;
+      --border: rgba(0, 0, 0, 0.08);
+      --shadow-soft: 0 20px 50px rgba(0, 0, 0, 0.08);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(193, 127, 89, 0.08), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 50%, rgba(0, 0, 0, 0.03), transparent),
+        var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* ------------------------------
+       Layout principal
+    --------------------------------*/
+    .app {
+      width: 100%;
+      max-width: 960px;
+      margin: auto;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: var(--shadow-soft);
+      padding: 28px 24px 28px;
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 24px;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 800px) {
+      .app {
+        grid-template-columns: 1fr;
+        padding: 18px 16px 20px;
+      }
+    }
+
+    /* ------------------------------
+       En-tête
+    --------------------------------*/
+    .header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 2vw + 0.8rem, 2rem);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .badge {
+      display: none; /* épuré */
+    }
+
+    /* ------------------------------
+       Carte formulaire
+    --------------------------------*/
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 16px 16px 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.08);
+      border-color: var(--accent-soft);
+    }
+
+    .card-header {
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      margin: 0 0 2px;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .card-subtitle {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .field-group {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .field-group {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.9rem;
+    }
+
+    .field label {
+      font-weight: 500;
+    }
+
+    .field small {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      padding-right: 32px;
+      font-size: 0.92rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      background: #f9fafb;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    /* Dropdowns (select) pour temps/prix */
+    select {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      font-size: 0.92rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      outline: none;
+      background: #f8fafc;
+      appearance: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      background: #fff;
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 12px;
+      pointer-events: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+      background: #ffffff;
+    }
+
+    /* Supprimer les flèches sur certains navigateurs */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .input-unit {
+      position: absolute;
+      right: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .checkbox-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .checkbox-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      font-size: 0.84rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+    }
+
+    .checkbox:hover {
+      background: #fff;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .checkbox input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+    }
+
+    .hint {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    button[type="submit"] {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #b8734f 0%, #c17f59 50%, #a66b47 100%);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      box-shadow: 0 10px 28px rgba(193, 127, 89, 0.35);
+      letter-spacing: 0.02em;
+    }
+
+    button[type="submit"]:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 36px rgba(193, 127, 89, 0.4);
+      filter: brightness(1.05);
+    }
+
+    button[type="submit"]:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button[type="submit"]:disabled {
+      opacity: 0.7;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    button .spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-top-color: #ffffff;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .api-hint {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    /* ------------------------------
+       Carte résultat
+    --------------------------------*/
+    .result-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      min-height: 200px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .recipes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .recipe-tile {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: #fdfcfb;
+      overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .recipe-tile.is-open {
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px var(--accent-soft);
+    }
+
+    .recipe-tile-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      user-select: none;
+    }
+
+    .recipe-tile-head:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .recipe-tile.is-open .recipe-tile-head {
+      background: var(--accent-soft);
+    }
+
+    .recipe-tile-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text-main);
+    }
+
+    .recipe-tile-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .recipe-tile-chevron {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .recipe-tile.is-open .recipe-tile-chevron {
+      transform: rotate(180deg);
+      color: var(--accent);
+    }
+
+    .recipe-tile-detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .recipe-tile-detail-inner {
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .recipe-tile.is-open .recipe-tile-detail {
+      max-height: 800px;
+    }
+
+    .result-section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin: 12px 0 6px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .recipe-tile-detail-inner .result-section-title:first-child {
+      margin-top: 14px;
+    }
+
+    .result-body {
+      font-size: 0.9rem;
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    .ingredients-list {
+      padding-left: 20px;
+      margin: 0 0 8px;
+    }
+
+    .ingredients-list li {
+      margin-bottom: 4px;
+    }
+
+    .instructions {
+      white-space: pre-wrap;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .fade-in {
+      animation: fadeInUp 220ms ease-out both;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .placeholder {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    /* ------------------------------
+       Messages d'état / erreurs
+    --------------------------------*/
+    .status {
+      margin-top: 6px;
+      font-size: 0.82rem;
+      min-height: 1.2em;
+    }
+
+    .status--error {
+      color: var(--danger);
+    }
+
+    .status--info {
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <!-- En-tête -->
+    <header class="header">
+      <div class="title-group">
+        <h1>Idée de repas</h1>
+        <p class="subtitle">Trouve une recette aléatoire depuis ta base Google Sheets.</p>
+      </div>
+      <div class="badge">HTML • CSS • JavaScript natif</div>
+    </header>
+
+    <!-- Colonne gauche : formulaire -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Filtrer la recette</h2>
+        <p class="card-subtitle">Renseigne quelques contraintes (facultatif), puis lance le dé.</p>
+      </div>
+
+      <form id="filters-form">
+        <!-- Menus déroulants -->
+        <div class="field-group">
+          <div class="field">
+            <label for="max-time">Temps max</label>
+            <small>Durée totale de la recette.</small>
+            <div class="input-wrapper">
+              <select id="max-time" name="max_time">
+                <option value="">Sans limite</option>
+                <option value="10">10 min</option>
+                <option value="15">15 min</option>
+                <option value="20">20 min</option>
+                <option value="25">25 min</option>
+                <option value="30">30 min</option>
+                <option value="40">40 min</option>
+                <option value="45">45 min</option>
+                <option value="60">1 h</option>
+              </select>
+              <span class="select-arrow">▾</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="price-range">Tranche de prix / personne</label>
+            <small>Budget approximatif par personne.</small>
+            <div class="input-wrapper">
+              <select id="price-range" name="price_range">
+                <option value="">Sans limite</option>
+                <option value="0-5">&lt; 5 €</option>
+                <option value="5-10">Entre 5 et 10 €</option>
+                <option value="10-15">Entre 10 et 15 €</option>
+                <option value="15+">&gt; 15 €</option>
+              </select>
+              <span class="select-arrow">▾</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Cases à cocher -->
+        <div class="field">
+          <label>Régimes & contraintes</label>
+          <div class="checkbox-row">
+            <label class="checkbox">
+              <input type="checkbox" id="sans-gluten" name="sans_gluten" />
+              <span>Sans gluten</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="sans-lactose" name="sans_lactose" />
+              <span>Sans lactose</span>
+            </label>
+          </div>
+          <p class="hint">Laisse tout vide pour une recette totalement aléatoire.</p>
+        </div>
+
+        <!-- Bouton + info -->
+        <div class="actions">
+          <button type="submit" id="submit-btn">
+            <span class="btn-label">Donne-moi une idée de repas</span>
+          </button>
+          <p class="api-hint">Trois idées s'affichent : clique sur celle qui t'intéresse pour voir le détail.</p>
+          <p id="status" class="status"></p>
+        </div>
+      </form>
+    </section>
+
+    <!-- Colonne droite : résultats -->
+    <section class="result-card" aria-live="polite">
+      <div id="placeholder" class="placeholder">
+        <p>Clique sur « Donne-moi une idée de repas » pour découvrir des recettes aléatoires.</p>
+      </div>
+
+      <div id="results" style="display: none;"></div>
+    </section>
+  </main>
+
+  <script>
+    // -----------------------------------------------------
+    // API proxy (Google Apps Script) - IMPORTANT
+    // -----------------------------------------------------
+    // Pour NE PAS exposer le token Airtable dans le navigateur, on appelle un proxy (Apps Script)
+    // qui garde le token côté serveur et renvoie une recette aléatoire en JSON.
+    //
+    // 1) Déploie le script (fichiers fournis dans /apps-script)
+    // 2) Colle ici l'URL du Web App Apps Script (se termine par /exec)
+    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbx7gyluZl4vaLe1c4dKjz5MYIuYG89GDrYFfdAJ1LG4FkH6cNsMZ_j0Fbsw9S8GmjMa/exec';
+
+    const form = document.getElementById('filters-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusEl = document.getElementById('status');
+
+    const placeholderEl = document.getElementById('placeholder');
+    const resultsEl = document.getElementById('results');
+
+    /**
+     * Construit l'URL de requête à partir des entrées du formulaire.
+     * Seuls les filtres renseignés sont envoyés en paramètres.
+     */
+    function buildRequestUrl() {
+      const maxTime = document.getElementById('max-time').value;
+      const priceRange = document.getElementById('price-range').value;
+      const sansGluten = document.getElementById('sans-gluten').checked;
+      const sansLactose = document.getElementById('sans-lactose').checked;
+
+      const params = new URLSearchParams();
+      if (maxTime) params.set('temps_max', maxTime);
+      
+      if (priceRange) {
+        if (priceRange === '0-5') params.set('prix_max', '5');
+        else if (priceRange === '5-10') { params.set('prix_min', '5'); params.set('prix_max', '10'); }
+        else if (priceRange === '10-15') { params.set('prix_min', '10'); params.set('prix_max', '15'); }
+        else if (priceRange === '15+') params.set('prix_min', '15');
+      }
+      
+      if (sansGluten) params.set('sans_gluten', 'true');
+      if (sansLactose) params.set('sans_lactose', 'true');
+      params.set('count', '3');
+
+      const qs = params.toString();
+      return qs ? `${API_BASE_URL}?${qs}` : API_BASE_URL;
+    }
+
+    function buildMetaLine(recipe) {
+      const parts = [];
+      if (recipe.temps_total_min != null && recipe.temps_total_min !== '') parts.push(recipe.temps_total_min + ' min');
+      if (recipe.prix_par_personne != null && recipe.prix_par_personne !== '') parts.push(recipe.prix_par_personne + ' € / pers.');
+      return parts.join(' · ');
+    }
+
+    function buildDetailFragment(recipe) {
+      const frag = document.createElement('div');
+      frag.className = 'recipe-tile-detail-inner';
+
+      const ingTitle = document.createElement('p');
+      ingTitle.className = 'result-section-title';
+      ingTitle.textContent = 'Ingrédients';
+      frag.appendChild(ingTitle);
+
+      const ingList = document.createElement('ul');
+      ingList.className = 'ingredients-list';
+      if (recipe.ingredients) {
+        const rawList = Array.isArray(recipe.ingredients) ? recipe.ingredients : String(recipe.ingredients).split(/[,;\n]/);
+        rawList.map((s) => s.trim()).filter(Boolean).forEach((item) => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          ingList.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = '— Aucun ingrédient renseigné —';
+        ingList.appendChild(li);
+      }
+      frag.appendChild(ingList);
+
+      const instTitle = document.createElement('p');
+      instTitle.className = 'result-section-title';
+      instTitle.textContent = 'Instructions';
+      frag.appendChild(instTitle);
+
+      const instP = document.createElement('p');
+      instP.className = 'instructions';
+      instP.textContent = recipe.instructions || 'Aucune instruction détaillée.';
+      frag.appendChild(instP);
+
+      return frag;
+    }
+
+    function renderRecipeTile(recipe, index) {
+      if (!recipe || !recipe.nom) return null;
+
+      const tile = document.createElement('article');
+      tile.className = 'recipe-tile fade-in';
+      tile.setAttribute('role', 'button');
+      tile.setAttribute('tabindex', '0');
+      tile.setAttribute('aria-expanded', 'false');
+
+      const head = document.createElement('div');
+      head.className = 'recipe-tile-head';
+
+      const left = document.createElement('div');
+      const name = document.createElement('span');
+      name.className = 'recipe-tile-name';
+      name.textContent = recipe.nom || 'Recette sans nom';
+      const meta = document.createElement('span');
+      meta.className = 'recipe-tile-meta';
+      meta.textContent = buildMetaLine(recipe);
+      left.appendChild(name);
+      if (meta.textContent) {
+        left.appendChild(document.createElement('br'));
+        left.appendChild(meta);
+      }
+
+      const chevron = document.createElement('span');
+      chevron.className = 'recipe-tile-chevron';
+      chevron.innerHTML = '▼';
+      chevron.setAttribute('aria-hidden', 'true');
+
+      head.appendChild(left);
+      head.appendChild(chevron);
+      tile.appendChild(head);
+
+      const detail = document.createElement('div');
+      detail.className = 'recipe-tile-detail';
+      detail.appendChild(buildDetailFragment(recipe));
+      tile.appendChild(detail);
+
+      head.addEventListener('click', function () {
+        const open = tile.classList.toggle('is-open');
+        tile.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+
+      tile.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          head.click();
+        }
+      });
+
+      return tile;
+    }
+
+    function renderRecipes(recipes) {
+      placeholderEl.style.display = 'none';
+      resultsEl.style.display = 'block';
+      resultsEl.innerHTML = '';
+      resultsEl.className = 'recipes-list';
+
+      recipes.forEach((r, i) => {
+        const tile = renderRecipeTile(r, i);
+        if (tile) resultsEl.appendChild(tile);
+      });
+    }
+
+    /**
+     * Affiche un message d'erreur sous le bouton et laisse le placeholder si besoin.
+     * @param {string} message
+     */
+    function showError(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('status--info');
+      statusEl.classList.add('status--error');
+      // Si aucun résultat n'est visible, on laisse le placeholder
+      if (!resultsEl || resultsEl.style.display === 'none') {
+        placeholderEl.style.display = 'block';
+      }
+    }
+
+    /**
+     * Affiche un message d'information (chargement, etc.).
+     * @param {string} message
+     */
+    function showInfo(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('status--error');
+      statusEl.classList.add('status--info');
+    }
+
+    /**
+     * Active / désactive le bouton et montre un petit spinner.
+     * @param {boolean} isLoading
+     */
+    function setLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      const labelSpan = submitBtn.querySelector('.btn-label');
+
+      if (isLoading) {
+        labelSpan.textContent = 'Recherche en cours...';
+        // Ajout d'un petit spinner si pas déjà présent
+        if (!submitBtn.querySelector('.spinner')) {
+          const spinner = document.createElement('span');
+          spinner.className = 'spinner';
+          submitBtn.insertBefore(spinner, submitBtn.firstChild);
+        }
+      } else {
+        labelSpan.textContent = 'Donne-moi une idée de repas';
+        const spinner = submitBtn.querySelector('.spinner');
+        if (spinner) {
+          spinner.remove();
+        }
+      }
+    }
+
+    /**
+     * Gère la soumission du formulaire :
+     *  - construit l'URL
+     *  - appelle l'API via fetch()
+     *  - gère les erreurs & affiche la recette
+     */
+    async function handleSubmit(event) {
+      event.preventDefault();
+
+      // Reset message d'état
+      statusEl.textContent = '';
+      statusEl.className = 'status';
+
+      if (!API_BASE_URL || API_BASE_URL.includes('TON_URL_APPS_SCRIPT_ICI')) {
+        showError("L'URL de l'API n'est pas configurée. Remplace API_BASE_URL par l'URL /exec de ton Apps Script.");
+        return;
+      }
+
+      const url = buildRequestUrl();
+      setLoading(true);
+      showInfo('Je lance le dé, patiente un instant...');
+
+      try {
+        const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+        if (!response.ok) throw new Error(`Erreur API (HTTP ${response.status}).`);
+        const data = await response.json();
+
+        if (data && data.success === false) {
+          showError(data.message || "Aucune recette trouvée avec ces critères.");
+          return;
+        }
+
+        const recipes = data && Array.isArray(data.recipes) ? data.recipes : (data && data.recipe ? [data.recipe] : []);
+        if (!recipes || recipes.length === 0) {
+          showError("Aucune recette trouvée avec ces critères.");
+          return;
+        }
+
+        renderRecipes(recipes);
+        showInfo('Une nouvelle recette a été trouvée 🍽️');
+      } catch (error) {
+        console.error('Erreur lors de la requête API :', error);
+        showError(error && error.message ? error.message : "Une erreur est survenue lors de l'appel à l'API.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    form.addEventListener('submit', handleSubmit);
+  </script>
+</body>
+</html>
